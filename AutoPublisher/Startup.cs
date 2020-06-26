@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoPublisher.Models;
+using AutoPublisher.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -26,17 +28,37 @@ namespace AutoPublisher
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSingleton<Configuration>(new Configuration()
+            services.AddSingleton<RunnerConfig>(sp =>
             {
-                ScriptPath = Configuration["Configuration:ScriptPath"]
+                var runnerConfig = new RunnerConfig();
+                var list = Configuration
+                    .GetSection("RunnerConfig")
+                    .GetSection("ScriptPath")
+                    .GetChildren().ToList();
+                       
+                list.ForEach(e =>
+                {
+                    runnerConfig.ScriptPath.Add(e.Key.ToLower(),e.Value);
+
+                });
+                return runnerConfig;
+
             });
             services.AddScoped<IScriptRunner,ScriptRunner>();
             services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new OpenApiInfo { Title = "Content API", Version = "v1" });
-                //var contentRoot = HostingEnvironment.ContentRootPath;
-                //var path = $"{contentRoot}\\Ordering.API.xml";
-                //c.IncludeXmlComments(path);
+                options.SwaggerDoc("v1", new OpenApiInfo { Title = "AutoPublisher API", Version = "v1" });
+            });
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy("myPolicy",
+                    builder =>
+                    {
+                        builder.AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .AllowAnyOrigin();
+                    });
             });
         }
 
@@ -60,7 +82,7 @@ namespace AutoPublisher
 
             app.UseSwagger();
             app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "AutoPublisher API"); });
-
+            app.UseStaticFiles();  //no need for wwwroot- enables us to access scrip files with relative path
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
