@@ -23,23 +23,42 @@ namespace AutoPublisher.Services
         {
             var script = ReadScriptFile(GetScripPathFor(serviceName));
 
-            var powerShell = PowerShell.Create();
+            using (var powerShell = PowerShell.Create())
+            {
+                PSDataCollection<PSObject> outputCollection = new PSDataCollection<PSObject>();
+                
+                powerShell.Streams.Progress.DataAdded += myProgressEventHandler;
+                outputCollection.DataAdded += dataAddedHandler;
+                powerShell.Streams.Error.DataAdded += errorAddedHandler;
             
-            powerShell.Streams.Progress.DataAdded += myProgressEventHandler;
-            
-            _logger.LogInformation("------------beginning to run script-----------------");
-            
-            powerShell.AddScript(script);
-            
-            var results = powerShell.BeginInvoke();
+                _logger.LogInformation("------------beginning to run script-----------------");
 
-            //foreach (var psObject in results)
-            //{
-            //    _logger.LogInformation(psObject.BaseObject.ToString());
-            //}
+               
+                powerShell.AddScript(script);
+            
+                var results = powerShell.Invoke();
 
-            _logger.LogInformation("--------------end of script----------------");
+                foreach (var psObject in results)
+                {
+                    _logger.LogInformation(psObject.BaseObject.ToString());
+                }
+                foreach (var psObject in powerShell.Streams.Error)
+                {
+                    _logger.LogInformation(psObject.ToString());
+                }
+                _logger.LogInformation("--------------end of script----------------");
+            }
 
+        }
+
+        private void errorAddedHandler(object sender, DataAddedEventArgs e)
+        {
+            _logger.LogInformation("error");
+        }
+
+        private void dataAddedHandler(object sender, DataAddedEventArgs e)
+        {
+            _logger.LogInformation("data");
         }
 
         private string GetScripPathFor(string serviceName)
