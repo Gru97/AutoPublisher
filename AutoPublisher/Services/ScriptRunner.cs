@@ -9,6 +9,7 @@ namespace AutoPublisher.Services
     public interface IScriptRunner
     {
         void PublishService(string serviceName);
+        void EnqueueService(string serviceName);
     }
     public class ScriptRunner : IScriptRunner
     {
@@ -33,7 +34,11 @@ namespace AutoPublisher.Services
             
                 _logger.LogInformation("------------beginning to run script-----------------");
 
-               
+                powerShell.AddCommand("Set-ExecutionPolicy")
+                    .AddParameter("Scope", "Process")
+                    .AddParameter("ExecutionPolicy", "Bypass")
+                    .Invoke();
+
                 powerShell.AddScript(script);
             
                 var results = powerShell.Invoke();
@@ -105,6 +110,15 @@ namespace AutoPublisher.Services
             if (newRecord.PercentComplete != -1)
             {
                 _logger.LogInformation("Progress updated: {0}", newRecord.PercentComplete);
+            }
+        }
+
+        public void EnqueueService(string serviceName)
+        {
+            var queuePath = _runnerConfig.QueuePath;
+            using (var writer = File.CreateText(queuePath))
+            {
+                writer.WriteLine(serviceName); 
             }
         }
 

@@ -41,6 +41,8 @@ namespace AutoPublisher
                     runnerConfig.ScriptPath.Add(e.Key.ToLower(),e.Value);
 
                 });
+                runnerConfig.QueuePath = Configuration["RunnerConfig:QueuePath"];
+
                 return runnerConfig;
 
             });
@@ -60,6 +62,9 @@ namespace AutoPublisher
                             .AllowAnyOrigin();
                     });
             });
+
+            services.AddHostedService<TaskRunner>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

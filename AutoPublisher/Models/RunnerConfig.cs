@@ -12,5 +12,6 @@ namespace AutoPublisher.Models
             ScriptPath = new Dictionary<string, string>();
         }
         public Dictionary<string, string> ScriptPath { get; set; }
+        public string QueuePath { get; set; }
     }
 }
